@@ -4,6 +4,7 @@ import boto3
 from botocore.exceptions import ClientError
 from dotenv import load_dotenv
 import os
+from werkzeug.utils import secure_filename
 
 load_dotenv()  # Load environment variables from .env file
 
@@ -28,6 +29,8 @@ def login_required(f):
             return redirect(url_for('login'))
         return f(*args, **kwargs)
     return decorated_function
+
+
 
 def get_images_from_bucket(bucket_name):
     s3_client = boto3.client('s3')
@@ -80,10 +83,55 @@ def logout():
     flash('You have been logged out successfully')
     return redirect(url_for('login'))
 @app.route("/gallery")
+
+
 @login_required  # Add login required to protect gallery
 def gallery():
     images = get_images_from_bucket('photogallery4220')
     return render_template('gallery.html', images=images)
+
+
+
+ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'pdf'}
+
+def allowed_file(filename):
+    return '.' in filename and \
+           filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
+@app.route('/upload', methods=['POST'])
+@login_required
+def upload_files():
+    if 'files[]' not in request.files:
+        flash('No file part')
+        return redirect(url_for('gallery'))
+    
+    files = request.files.getlist('files[]')
+    
+    if not files:
+        flash('No files selected')
+        return redirect(url_for('gallery'))
+
+    for file in files:
+        if file and allowed_file(file.filename):
+            filename = secure_filename(file.filename)
+            
+            # Upload to S3
+            try:
+                s3_client.upload_fileobj(
+                    file,
+                    'photogallery4220',
+                    filename,
+                    ExtraArgs={'ContentType': file.content_type}
+                )
+                flash('File successfully uploaded')
+            except ClientError as e:
+                flash(f'Error uploading file: {str(e)}')
+                print(e)
+        else:
+            flash('Allowed file types are png, jpg, jpeg, pdf')
+    
+    return redirect(url_for('gallery'))
+
 
 if __name__ == '__main__':
     app.run(debug=True)
