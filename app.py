@@ -33,7 +33,7 @@ def login_required(f):
 
 
 def get_images_from_bucket(bucket_name):
-    s3_client = boto3.client('s3')
+    # s3_client = boto3.client('s3')
     public_urls = []
     
     try:
@@ -51,12 +51,14 @@ def get_images_from_bucket(bucket_name):
                 ExpiresIn=3600  # URL expires in 1 hour
             )
             public_urls.append(presigned_url)
+            print(f"Generated URL: {presigned_url}")  # Add this for debugging
             
         return public_urls
         
     except ClientError as e:
         print(f"Error: {e}")
         return []
+
 
 @app.route('/')
 @login_required
@@ -88,6 +90,7 @@ def logout():
 @login_required  # Add login required to protect gallery
 def gallery():
     images = get_images_from_bucket('photogallery4220')
+    print(f"Number of images found: {len(images)}")  # Add this for debugging
     return render_template('gallery.html', images=images)
 
 
