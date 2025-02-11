@@ -5,10 +5,6 @@ from botocore.exceptions import ClientError
 from dotenv import load_dotenv
 import os
 
-
-
-
-
 load_dotenv()  # Load environment variables from .env file
 
 s3_client = boto3.client(
@@ -32,7 +28,6 @@ def login_required(f):
             return redirect(url_for('login'))
         return f(*args, **kwargs)
     return decorated_function
-
 
 def get_images_from_bucket(bucket_name):
     s3_client = boto3.client('s3')
@@ -60,12 +55,10 @@ def get_images_from_bucket(bucket_name):
         print(f"Error: {e}")
         return []
 
-
-
 @app.route('/')
 @login_required
 def home():
-    return 'Welcome to the protected page!'
+    return redirect(url_for('gallery'))  # Redirect root to gallery
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
@@ -74,7 +67,7 @@ def login():
         
         if password == MASTER_PASSWORD:
             session['logged_in'] = True
-            return redirect(url_for('home'))
+            return redirect(url_for('gallery'))  # Redirect to gallery after login
         else:
             flash('Invalid password')
     
@@ -86,7 +79,8 @@ def logout():
     return redirect(url_for('login'))
 
 @app.route("/gallery")
-def show_gallery():
+@login_required  # Add login required to protect gallery
+def gallery():
     images = get_images_from_bucket('photogallery4220')
     return render_template('gallery.html', images=images)
 
