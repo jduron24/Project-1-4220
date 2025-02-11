@@ -74,10 +74,11 @@ def login():
     return render_template('login.html')
 
 @app.route('/logout')
+@login_required  # Add login_required to protect logout route
 def logout():
-    session.pop('logged_in', None)
+    session.clear()  # Clear all session data
+    flash('You have been logged out successfully')
     return redirect(url_for('login'))
-
 @app.route("/gallery")
 @login_required  # Add login required to protect gallery
 def gallery():
