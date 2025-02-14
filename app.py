@@ -76,13 +76,14 @@ def home():
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
+        username = request.form['username']
         password = request.form['password']
         
-        if password == MASTER_PASSWORD:
+        if username == "user1" and password == MASTER_PASSWORD:
             session['logged_in'] = True
-            return redirect(url_for('gallery'))  # Redirect to gallery after login
+            return redirect(url_for('gallery'))
         else:
-            flash('Invalid password')
+            flash('Invalid username or password')
     
     return render_template('login.html')
 
