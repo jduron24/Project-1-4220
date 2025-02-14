@@ -20,7 +20,7 @@ s3_client = boto3.client(
 
 DB_HOSTNAME="photogallerydb.cbuykuwgsc5z.us-east-2.rds.amazonaws.com"
 DB_USERNAME = 'admin'
-DB_PASSWORD = '2o8T5zvBhecHd1AcQReK'
+DB_PASSWORD = ''
 DB_NAME = 'photogallerydb'
 
 app = Flask(__name__)
