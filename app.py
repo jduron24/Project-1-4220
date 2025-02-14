@@ -5,15 +5,23 @@ from botocore.exceptions import ClientError
 from dotenv import load_dotenv
 import os
 from werkzeug.utils import secure_filename
+import pymysql
+pymysql.install_as_MySQLdb()
+import MySQLdb
 
 load_dotenv()  # Load environment variables from .env file
 
 s3_client = boto3.client(
     's3',
-    aws_access_key_id=os.environ.get('AWS_ACCESS_KEY_ID'),
-    aws_secret_access_key=os.environ.get('AWS_SECRET_ACCESS_KEY'),
-    region_name=os.environ.get('AWS_DEFAULT_REGION')
+     aws_access_key_id=os.environ.get('AWS_ACCESS_KEY_ID'),
+     aws_secret_access_key=os.environ.get('AWS_SECRET_ACCESS_KEY'),
+     region_name=os.environ.get('AWS_DEFAULT_REGION')
 )
+
+DB_HOSTNAME="photogallerydb.cbuykuwgsc5z.us-east-2.rds.amazonaws.com"
+DB_USERNAME = 'admin'
+DB_PASSWORD = '2o8T5zvBhecHd1AcQReK'
+DB_NAME = 'photogallerydb'
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = '123'
@@ -89,8 +97,17 @@ def logout():
 
 @login_required  # Add login required to protect gallery
 def gallery():
+#     conn = pymysql.connect(
+#     host=DB_HOSTNAME,
+#     user=DB_USERNAME,
+#     password=DB_PASSWORD,
+#     database=DB_NAME,
+#     port=3306
+# )
     images = get_images_from_bucket('photogallery4220')
     print(f"Number of images found: {len(images)}")  # Add this for debugging
+
+   # conn.close()
     return render_template('gallery.html', images=images)
 
 
