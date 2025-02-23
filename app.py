@@ -5,12 +5,8 @@ from botocore.exceptions import ClientError
 from dotenv import load_dotenv
 import os
 from werkzeug.utils import secure_filename
-import pymysql
-pymysql.install_as_MySQLdb()
-import exifread
 import datetime
 import time
-import json
 from boto3.dynamodb.conditions import Key, Attr
 
 load_dotenv()  # Load environment variables from .env file
