@@ -7,21 +7,29 @@ import os
 from werkzeug.utils import secure_filename
 import pymysql
 pymysql.install_as_MySQLdb()
-import MySQLdb
+import exifread
+import datetime
+import time
+import json
 
 load_dotenv()  # Load environment variables from .env file
 
+AWS_ACCESS_KEY = os.environ.get('AWS_ACCESS_KEY_ID')
+AWS_SECRET_KEY = os.environ.get('AWS_SECRET_ACCESS_KEY')
+REGION = os.environ.get('AWS_DEFAULT_REGION')
+BUCKET_NAME = "photogallery4220"
+
 s3_client = boto3.client(
     's3',
-     aws_access_key_id=os.environ.get('AWS_ACCESS_KEY_ID'),
-     aws_secret_access_key=os.environ.get('AWS_SECRET_ACCESS_KEY'),
-     region_name=os.environ.get('AWS_DEFAULT_REGION')
+     aws_access_key_id = AWS_ACCESS_KEY,
+     aws_secret_access_key = AWS_SECRET_KEY,
+     region_name = REGION
 )
 
-DB_HOSTNAME="photogallerydb.cbuykuwgsc5z.us-east-2.rds.amazonaws.com"
-DB_USERNAME = 'admin'
-DB_PASSWORD = ''
-DB_NAME = 'photogallerydb'
+dynamodb = boto3.resource('dynamodb', aws_access_key_id=AWS_ACCESS_KEY,
+                            aws_secret_access_key=AWS_SECRET_KEY,
+                            region_name=REGION)
+table = dynamodb.Table('PhotoGallery')
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = '123'
@@ -38,7 +46,15 @@ def login_required(f):
         return f(*args, **kwargs)
     return decorated_function
 
-
+def s3uploading(file, filename):
+    s3_client.upload_fileobj(
+                    file,
+                    BUCKET_NAME,
+                    filename,
+                    ExtraArgs={'ContentType': file.content_type}
+                )
+    return "http://"+BUCKET_NAME+\
+        ".s3.us-east-2.amazonaws.com/"+ filename  
 
 def get_images_from_bucket(bucket_name):
     # s3_client = boto3.client('s3')
@@ -98,13 +114,6 @@ def logout():
 
 @login_required  # Add login required to protect gallery
 def gallery():
-#     conn = pymysql.connect(
-#     host=DB_HOSTNAME,
-#     user=DB_USERNAME,
-#     password=DB_PASSWORD,
-#     database=DB_NAME,
-#     port=3306
-# )
     images = get_images_from_bucket('photogallery4220')
     print(f"Number of images found: {len(images)}")  # Add this for debugging
 
@@ -135,15 +144,43 @@ def upload_files():
     for file in files:
         if file and allowed_file(file.filename):
             filename = secure_filename(file.filename)
+            ts=time.time()
+            timestamp = datetime.datetime.\
+                        fromtimestamp(ts).\
+                        strftime('%Y-%m-%d %H:%M:%S')
             
+
             # Upload to S3
             try:
-                s3_client.upload_fileobj(
-                    file,
-                    'photogallery4220',
-                    filename,
-                    ExtraArgs={'ContentType': file.content_type}
+                uploadedFileURL = s3uploading(file, filename)
+            
+                table.put_item(
+                Item={
+                        "PhotoID": str(int(ts*1000)),
+                        "CreationTime": timestamp,
+                        "Title": filename,
+                        "URL": uploadedFileURL
+                    }
                 )
+
+                # dynamodb.put_item(
+                #     TableName="PhotoGallery",
+                # Item={
+                #         "PhotoID": {
+                #          'S': str(int(ts*1000))   
+                #         },
+                #         "CreationTime" : {
+                #             'S' : timestamp
+                #         },
+                #         "Title" : {
+                #             'S' : filename
+                #         },
+                #         "URL" : {
+                #             'S' : uploadedFileURL
+                #         }
+                #     }
+                # )
+
                 flash('File successfully uploaded')
             except ClientError as e:
                 flash(f'Error uploading file: {str(e)}')
