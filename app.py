@@ -11,6 +11,7 @@ import exifread
 import datetime
 import time
 import json
+from boto3.dynamodb.conditions import Key, Attr
 
 load_dotenv()  # Load environment variables from .env file
 
@@ -66,6 +67,7 @@ def get_images_from_bucket(bucket_name):
         
         # Generate presigned URLs for each object
         for item in response:
+            print(item)
             presigned_url = s3_client.generate_presigned_url(
                 'get_object',
                 Params={
@@ -78,6 +80,28 @@ def get_images_from_bucket(bucket_name):
             print(f"Generated URL: {presigned_url}")  # Add this for debugging
             
         return public_urls
+        
+    except ClientError as e:
+        print(f"Error: {e}")
+        return []
+    
+def get_image_urls(images):
+    try:
+        
+        # Generate presigned URLs for each object
+        for item in images:
+            print(item)
+            presigned_url = s3_client.generate_presigned_url(
+                'get_object',
+                Params={
+                    'Bucket': BUCKET_NAME,
+                    'Key': item['URL']
+                },
+                ExpiresIn=3600  # URL expires in 1 hour
+            )
+            item['URL'] = presigned_url
+            
+        return images
         
     except ClientError as e:
         print(f"Error: {e}")
@@ -114,12 +138,14 @@ def logout():
 
 @login_required  # Add login required to protect gallery
 def gallery():
-    images = get_images_from_bucket('photogallery4220')
+    response = table.scan()
+
+    images = response['Items']
+    images = get_image_urls(images)
     print(f"Number of images found: {len(images)}")  # Add this for debugging
 
    # conn.close()
     return render_template('gallery.html', images=images)
-
 
 
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'pdf'}
@@ -149,37 +175,18 @@ def upload_files():
                         fromtimestamp(ts).\
                         strftime('%Y-%m-%d %H:%M:%S')
             
-
             # Upload to S3
             try:
-                uploadedFileURL = s3uploading(file, filename)
+                s3uploading(file, filename)
             
                 table.put_item(
                 Item={
                         "PhotoID": str(int(ts*1000)),
                         "CreationTime": timestamp,
                         "Title": filename,
-                        "URL": uploadedFileURL
+                        "URL": filename
                     }
                 )
-
-                # dynamodb.put_item(
-                #     TableName="PhotoGallery",
-                # Item={
-                #         "PhotoID": {
-                #          'S': str(int(ts*1000))   
-                #         },
-                #         "CreationTime" : {
-                #             'S' : timestamp
-                #         },
-                #         "Title" : {
-                #             'S' : filename
-                #         },
-                #         "URL" : {
-                #             'S' : uploadedFileURL
-                #         }
-                #     }
-                # )
 
                 flash('File successfully uploaded')
             except ClientError as e:
@@ -189,6 +196,18 @@ def upload_files():
             flash('Allowed file types are png, jpg, jpeg, pdf')
     
     return redirect(url_for('gallery'))
+
+@app.route('/search', methods=['GET'])
+def search_page():
+    query = request.args.get('query', None)    
+    
+    response = table.scan(
+        FilterExpression=Attr('Title').contains(str(query))
+    )
+    items = response['Items']
+    images = get_image_urls(items)
+    return render_template('search.html', 
+            images=images, searchquery=query)
 
 
 if __name__ == '__main__':

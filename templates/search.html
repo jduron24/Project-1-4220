@@ -4,7 +4,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gallery</title>
+    <title>Search</title>
+
     <style>
         .header {
             display: flex;
@@ -56,6 +57,10 @@
             border-color: #1877f2;
         }
 
+        .gallery-link {
+            font-size: 1.25rem;
+        }
+
         .photo-item {
             display: flex;
             flex-direction: column;
@@ -66,39 +71,28 @@
             text-align: center;
         }
     </style>
+
 </head>
 
 <body>
+
     <div class="header">
         <h1>Photo Gallery</h1>
+        <a href="/gallery" class="gallery-link">Back To Gallery</a>
         <a href="{{ url_for('logout') }}" class="logout-btn">Logout</a>
-    </div>
-
-    <div class="upload-section">
-        <h2>Upload Files</h2>
-        <form method="POST" enctype="multipart/form-data" action="{{ url_for('upload_files') }}">
-            <input type="file" name="files[]" multiple accept=".jpg,.png,.pdf">
-            <input type="submit" value="Upload Files">
-        </form>
-        {% with messages = get_flashed_messages() %}
-        {% if messages %}
-        {% for message in messages %}
-        <div class="alert">{{ message }}</div>
-        {% endfor %}
-        {% endif %}
-        {% endwith %}
     </div>
 
     <div class="search">
         <form method='get' action="/search">
-            <input type="text" placeholder="Search images..." id="SearchImagesInput" name="query" />
+            <input type="text" placeholder="Search images..." id="SearchImagesInput" name="query"
+                value="{{searchquery}}" />
         </form>
     </div>
 
     <div class="gallery">
         {% for image in images %}
         <div class="photo-item">
-            <img src="{{ image.URL }}" alt="Gallery Image">
+            <img src="{{ image.URL }}" alt="Gallery Image" title="{{ image.Title }}">
             <span class="text-center">{{image.CreationTime}}</span>
         </div>
         {% endfor %}
