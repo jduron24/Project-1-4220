@@ -137,7 +137,6 @@ def gallery():
     response = table.scan()
 
     images = response['Items']
-    images = get_image_urls(images)
     print(f"Number of images found: {len(images)}")  # Add this for debugging
 
    # conn.close()
@@ -173,14 +172,14 @@ def upload_files():
             
             # Upload to S3
             try:
-                s3uploading(file, filename)
+                link = s3uploading(file, filename)
             
                 table.put_item(
                 Item={
                         "PhotoID": str(int(ts*1000)),
                         "CreationTime": timestamp,
                         "Title": filename,
-                        "URL": filename
+                        "URL": link
                     }
                 )
 
