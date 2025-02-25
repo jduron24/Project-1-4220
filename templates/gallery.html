@@ -100,6 +100,7 @@
         <div class="photo-item">
             <img src="{{ image.URL }}" alt="Gallery Image">
             <span class="text-center">{{image.CreationTime}}</span>
+            <a href="{{ image.URL }}" download="{{image.URL}}">Download</a>
         </div>
         {% endfor %}
     </div>
