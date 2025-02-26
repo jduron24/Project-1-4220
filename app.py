@@ -224,20 +224,23 @@ def upload_files():
 @login_required
 def search_page():
     query = request.args.get('query', '')
+    user_id = session.get('userID')  # Get the current user's ID from session
     
     if query:
+        # Filter images by title containing the query string AND belonging to current user
         response = table.scan(
-            FilterExpression=Attr('Title').contains(query) & Attr('UserID').eq(session['userID'])
+            FilterExpression=Attr('Title').contains(query) & Attr('UserID').eq(user_id)
         )
     else:
+        # If no query, return all images belonging to current user
         response = table.scan(
-            FilterExpression=Attr('UserID').eq(session['userID'])
+            FilterExpression=Attr('UserID').eq(user_id)
         )
     
-    items = response['Items']
-    images = get_image_urls(items)
+    images = response['Items']
+    images = get_image_urls(images)  # Generate presigned URLs
+    
     return render_template('search.html', images=images, searchquery=query)
-
 
 
 @app.route('/register', methods=['GET', 'POST'])
@@ -274,6 +277,8 @@ def register():
             print(f"DynamoDB error: {e}")
     
     return render_template('newAccount.html')
+
+
 
 if __name__ == '__main__':
     app.run(debug=True)
