@@ -1,1 +1,1 @@
-This is a flask project for my class
+This is a flask project for our class

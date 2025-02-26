@@ -25,6 +25,9 @@
                 <label for="password">Password:</label>
                 <input type="password" id="password" name="password" required>
             </div>
+            <div>
+                <p>Don't have an account? <a href="{{ url_for('register') }}">Register here</a></p>
+            </div>
             <button type="submit">Login</button>
         </form>
     </div>

@@ -149,6 +149,11 @@ def allowed_file(filename):
     return '.' in filename and \
            filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
+
+
+
+
+
 @app.route('/upload', methods=['POST'])
 @login_required
 def upload_files():
@@ -204,6 +209,37 @@ def search_page():
     return render_template('search.html', 
             images=images, searchquery=query)
 
+
+@app.route('/register', methods=['GET', 'POST'])
+def register():
+    if request.method == 'POST':
+        username = request.form['username']
+        password = request.form['password']
+        
+        try:
+            # Check if user exists
+            response = user_table.get_item(Key={'username': username})
+            if 'Item' in response:
+                flash('Username already exists')
+                return redirect(url_for('register'))
+            
+            # Create new user
+            user_table.put_item(
+                Item={
+                    'username': username,
+                    'password': generate_password_hash(password),
+                    'created_at': datetime.datetime.now().isoformat()
+                }
+            )
+            
+            flash('Registration successful! Please login')
+            return redirect(url_for('login'))
+            
+        except ClientError as e:
+            flash('Error creating account')
+            print(f"DynamoDB error: {e}")
+    
+    return render_template('newAccount.html')
 
 if __name__ == '__main__':
     app.run(debug=True)
