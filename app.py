@@ -27,6 +27,7 @@ dynamodb = boto3.resource('dynamodb', aws_access_key_id=AWS_ACCESS_KEY,
                             aws_secret_access_key=AWS_SECRET_KEY,
                             region_name=REGION)
 table = dynamodb.Table('PhotoGallery')
+user_table = dynamodb.Table('Users')
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = '123'
@@ -218,17 +219,18 @@ def register():
         
         try:
             # Check if user exists
-            response = user_table.get_item(Key={'username': username})
-            if 'Item' in response:
-                flash('Username already exists')
-                return redirect(url_for('register'))
+            # response = user_table.get_item(Key={'username': username})
+            # if 'Item' in response:
+            #     flash('Username already exists')
+            #     return redirect(url_for('register'))
             
             # Create new user
             user_table.put_item(
                 Item={
-                    'username': username,
-                    'password': generate_password_hash(password),
-                    'created_at': datetime.datetime.now().isoformat()
+                    'username': "username",
+                    'password':"password",
+                    'created_at': "today",
+                    'userID': "blah"
                 }
             )
             
