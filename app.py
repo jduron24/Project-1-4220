@@ -116,13 +116,26 @@ def login():
         username = request.form['username']
         password = request.form['password']
         
-        if username == "user1" and password == MASTER_PASSWORD:
-            session['logged_in'] = True
-            return redirect(url_for('gallery'))
-        else:
+        try:
+            # Get user from DynamoDB
+            response = user_table.get_item(Key={'username': username})
+            
+            if 'Item' in response:
+                user = response['Item']
+                if (user['password'] ==  password):
+                    session['logged_in'] = True
+                    session['username'] = username
+                    session['userID'] = user['userID']
+                    flash('Login successful!')
+                    return redirect(url_for('gallery'))
+            
             flash('Invalid username or password')
+        except ClientError as e:
+            flash('Login error')
+            print(f"DynamoDB error: {e}")
     
     return render_template('login.html')
+
 
 @app.route('/logout')
 @login_required  # Add login_required to protect logout route
@@ -135,12 +148,17 @@ def logout():
 
 @login_required  # Add login required to protect gallery
 def gallery():
-    response = table.scan()
+    # Get only the current user's photos
+    response = table.scan(
+        FilterExpression=Attr('UserID').eq(session['userID'])
+    )
 
     images = response['Items']
-    print(f"Number of images found: {len(images)}")  # Add this for debugging
-
-   # conn.close()
+    print(f"Number of images found: {len(images)}")
+    
+    # Get presigned URLs for each image
+    images = get_image_urls(images)
+    
     return render_template('gallery.html', images=images)
 
 
@@ -171,21 +189,25 @@ def upload_files():
     for file in files:
         if file and allowed_file(file.filename):
             filename = secure_filename(file.filename)
-            ts=time.time()
-            timestamp = datetime.datetime.\
-                        fromtimestamp(ts).\
-                        strftime('%Y-%m-%d %H:%M:%S')
+            ts = time.time()
+            timestamp = datetime.datetime.fromtimestamp(ts).strftime('%Y-%m-%d %H:%M:%S')
+            
+            # Create a user-specific path for the file
+            user_filename = f"{session['username']}/{filename}"
             
             # Upload to S3
             try:
-                link = s3uploading(file, filename)
+                # Update s3uploading to use the user-specific filename
+                link = s3uploading(file, user_filename)
             
                 table.put_item(
-                Item={
+                    Item={
                         "PhotoID": str(int(ts*1000)),
                         "CreationTime": timestamp,
                         "Title": filename,
-                        "URL": link
+                        "URL": user_filename,  # Store just the path
+                        "UserID": session['userID'],  # Associate with user
+                        "Username": session['username']
                     }
                 )
 
@@ -199,16 +221,23 @@ def upload_files():
     return redirect(url_for('gallery'))
 
 @app.route('/search', methods=['GET'])
+@login_required
 def search_page():
-    query = request.args.get('query', None)    
+    query = request.args.get('query', '')
     
-    response = table.scan(
-        FilterExpression=Attr('Title').contains(str(query))
-    )
+    if query:
+        response = table.scan(
+            FilterExpression=Attr('Title').contains(query) & Attr('UserID').eq(session['userID'])
+        )
+    else:
+        response = table.scan(
+            FilterExpression=Attr('UserID').eq(session['userID'])
+        )
+    
     items = response['Items']
     images = get_image_urls(items)
-    return render_template('search.html', 
-            images=images, searchquery=query)
+    return render_template('search.html', images=images, searchquery=query)
+
 
 
 @app.route('/register', methods=['GET', 'POST'])
@@ -218,6 +247,12 @@ def register():
         password = request.form['password']
         
         try:
+            # Check if user exists
+            response = user_table.get_item(Key={'username': username})
+            if 'Item' in response:
+                flash('Username already exists')
+                return redirect(url_for('register'))
+            
             import uuid
             import datetime
 
