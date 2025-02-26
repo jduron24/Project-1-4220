@@ -218,19 +218,16 @@ def register():
         password = request.form['password']
         
         try:
-            # Check if user exists
-            # response = user_table.get_item(Key={'username': username})
-            # if 'Item' in response:
-            #     flash('Username already exists')
-            #     return redirect(url_for('register'))
-            
+            import uuid
+            import datetime
+
             # Create new user
             user_table.put_item(
                 Item={
-                    'username': "username",
-                    'password':"password",
-                    'created_at': "today",
-                    'userID': "blah"
+                    'username': username,
+                    'password': password,
+                    'created_at': datetime.datetime.now().isoformat(),
+                    'userID': str(uuid.uuid4())
                 }
             )
             
