@@ -84,25 +84,41 @@ def get_images_from_bucket(bucket_name):
     
 def get_image_urls(images):
     try:
-        
-        # Generate presigned URLs for each object
         for item in images:
-            print(item)
-            presigned_url = s3_client.generate_presigned_url(
+            original_key = item['URL']  # The original S3 key, e.g. "username/filename.jpg"
+            file_title = item['Title']  # The original filename
+
+            # 1. Presigned URL for normal viewing in the browser
+            view_url = s3_client.generate_presigned_url(
                 'get_object',
                 Params={
                     'Bucket': BUCKET_NAME,
-                    'Key': item['URL']
+                    'Key': original_key
                 },
-                ExpiresIn=3600  # URL expires in 1 hour
+                ExpiresIn=3600  # 1 hour
             )
-            item['URL'] = presigned_url
-            
+            item['URL'] = view_url
+
+            # 2. Presigned URL for "forced" download
+            download_url = s3_client.generate_presigned_url(
+                'get_object',
+                Params={
+                    'Bucket': BUCKET_NAME,
+                    'Key': original_key,
+                    # Force download with this content-disposition:
+                    'ResponseContentDisposition': f'attachment; filename="{file_title}"'
+                },
+                ExpiresIn=3600  # 1 hour
+            )
+            # Store it in a new key so you can refer to it in your template
+            item['DOWNLOAD_URL'] = download_url
+
         return images
         
     except ClientError as e:
         print(f"Error: {e}")
         return []
+
 
 
 @app.route('/')

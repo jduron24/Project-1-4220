@@ -1,0 +1,38 @@
+[
+    {
+        "password": "password",
+        "username": "user1",
+        "created_at": "2025-02-26T11:47:08.335710",
+        "userID": "bab28a93-0193-4334-b829-90866389b252"
+    },
+    {
+        "password": 123456789,
+        "username": "nturnis",
+        "created_at": "2025-02-27T18:03:55.776647",
+        "userID": "ecc7c2fd-d877-424c-8fae-76f80e011022"
+    },
+    {
+        "password": "password",
+        "username": "user10",
+        "created_at": "2025-02-27T19:43:56.150138",
+        "userID": "dc5059c5-e7ba-4a43-af63-166fa55cf488"
+    },
+    {
+        "password": "password2",
+        "username": "user2",
+        "created_at": "2025-02-26T12:00:15.807039",
+        "userID": "f97dac3d-9168-4f66-9e7b-c2bc39455876"
+    },
+    {
+        "password": "test@123",
+        "username": "franck",
+        "created_at": "2025-02-26T19:11:32.738801",
+        "userID": "24c4322a-510d-4b34-9100-66f326c5e4ff"
+    },
+    {
+        "password": "test2",
+        "username": "test1",
+        "created_at": "2025-02-26T16:42:27.311816",
+        "userID": "d8d5d981-c8e7-40dd-a0c6-65511e1f219d"
+    }
+]
